@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="keywords" content="ZHIHUA·WEI,基于PHP和JS的AES相互加密解密方法详解,AES加密解密">
+    <meta name="description" content="基于PHP和JS的AES相互加密解密方法详解,AES加密解密,PHP开发,ZHIHUA· WEI">
+    <meta name="author" content="ZHIHUA·WEI">
+    <meta name="version" content="1.0.0">
+    <title>基于PHP和JS的AES相互加密解密方法详解(CryptoJS)</title>
+    <script src="static/js/jquery-3.1.1.min.js"></script>
+    <script src="static/js/aes.js"></script>
+    <script src="static/js/pad-zeropadding.js"></script>
+    <script src="static/js/jquery.base64.js"></script>
+    <script src="static/js/aes-helper-0.1.js?v=4"></script>
+</head>
+<body>
+<div style="margin: 0;text-align:center;">
+    <h2>基于PHP和JS的AES相互加密解密方法详解(CryptoJS)</h2>
+</div>
+<div style="margin:0 18%;">
+    <h4>注意说明：</h4>
+    <ul>
+        <li>1. 首先引入CryptoJS包中的aes.js和pad-zeropadding.js</li>
+        <li>2. 其次引入了jquery.min.js和自己封装的aes-helper-0.1.js jquery.base64.js(内容主要是加密解密函数)</li>
+        <li>3. 加密解密过程中的向量和密钥必须保持一致</li>
+        <li>4. 进行加密的数据(字符串类型)：{"username":"1001","password":"123456","terminal":"PC"}</li>
+        <li>5. 加密结果是变化的在这不写(变化的原因是因为密钥取得是当前时间)</li>
+        <li>6. 具体详情可读代码(注释完整)</li>
+    </ul>
+</div>
+
+<div style="margin:0 18%;">
+    <h4>js 加密 php 解密：</h4>
+    <ul>
+        <li>进行加密的数据(字符串类型)：{"username":"1001","password":"123456","terminal":"PC"}</li>
+        <li id="encrypt_key"></li>
+        <li id="encrypt_string"></li>
+        <li class="iv"></li>
+        <li id="jp"></li>
+
+    </ul>
+</div>
+<div style="margin:0 18%;">
+    <h4>php 加密 js 解密：</h4>
+    <ul>
+        <li>
+            进行解密密的数据(字符串类型、PHP端生成)：{"dd":"dd","cc":"cc"}
+        </li>
+        <li id="decrypt_key">解密的密钥：lifespace350e419</li>
+        <li id="decrypt_iv"></li>
+        <li id="decrypt_string"></li>
+
+    </ul>
+</div>
+<script>
+    //获取iv
+    var iv = AES.iv();
+    //加密秘钥
+    var encrypt_key = 'lifespace350e419';
+    var data = {};
+    data.username = '1001';
+    data.password = '123456';
+    data.terminal = 'PC';
+    //要加密的数据 对象转字符串 直接字符串则不用此项
+    var encrypt_string = AES.obj2str(data);
+    //加密后密文（加密函数在function.js文件中）
+    var encrypted_string = AES.encrypt(encrypt_string, encrypt_key, iv);
+
+    var msg = {};
+    msg.data = encrypted_string;
+    msg.key = encrypt_key;
+    msg.iv = iv;
+    //post发送给php js加密 Php 解密
+    $.ajax({
+        'type': 'post',
+        'url': 'api/t/test',
+        data: msg,
+        success: function (res) {
+            $("#encrypt_key").text("JS加密密钥：" + encrypt_key);
+            $("#encrypt_string").text("JS加密后字符串：" + encrypted_string);
+            $('.iv').text("加密向量：" + iv);
+            $("#jp").text("php 解密数据" + AES.obj2str(res));
+
+        }
+    });
+
+    //php 加密 js解密
+    $.get('api/t/test', function (res) {
+        if (res.code == 200) {
+            console.log(AES.decrypt2Obj(res.data, encrypt_key, res.iv));
+            var ss = AES.decrypt(res.data, encrypt_key, res.iv);
+            //base64转字符串
+            var str = AES.base642str(ss);
+            //base64转对象
+            var obj = AES.base642obj(ss);
+            console.log(obj.dd);
+            $("#decrypt_iv").text("解密iv : " + res.iv);
+            $("#decrypt_string").text("js解密数据" + str);
+        }
+    });
+
+
+    // $.post('api/t/test', msg, function (res) {
+    //     var key = 'lifespace350e419';
+    //     if (res.code == 200) {
+    //         var ss = AES.decrypt(res.data, key, res.iv);
+    //         var obj = AES.base642obj(ss);
+    //         console.log(obj.dd);
+    //     }
+    // });
+
+
+    function trim(s) {
+        s.replace(/\u0000|\u0001|\u0002|\u0003|\u0004|\u0005|\u0006|\u0007|\u0008|\u0009|\u000a|\u000b|\u000c|\u000d|\u000e|\u000f|\u0010|\u0011|\u0012|\u0013|\u0014|\u0015|\u0016|\u0017|\u0018|\u0019|\u001a|\u001b|\u001c|\u001d|\u001e|\u001f/g, "");
+        return s.replace(/(^\s*)|(\s*$)/g, "");
+    }
+</script>
+</body>
+</html>
